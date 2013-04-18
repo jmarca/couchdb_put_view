@@ -1,0 +1,28 @@
+{
+  "name": "couchdb_get_views",
+  "version": "0.0.1",
+  "description": "Helper to query views from CouchDB",
+  "main": "couchdb_get_views.js",
+  "dependencies": {
+    "couchdb_toQuery": "git://github.com/jmarca/couchdb_toQuery.git",
+    "superagent": "~0.12.0"
+  },
+  "devDependencies": {
+      "should": ""
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jmarca/couchdb_get_views"
+  },
+  "keywords": [
+    "CouchDB",
+    "query",
+    "view"
+  ],
+  "author": "James E. Marca",
+  "license": "BSD",
+  "readmeFilename": "README.md"
+}
