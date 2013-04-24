@@ -20,8 +20,7 @@ If you have to read the design doc in from a file, then I do this:
 ```javascript
 
 var putview = require('./couchdb_put_view')
-var viewfile = env.IMPUTED_COLLECT_VIEW_FILE || './views/collect2.json'
-var collect_view = env.IMPUTED_COLLECT_VIEW || '_design/collect2/_view/idymdh_array'
+var viewfile = process.env.MY_DESIGN_DOC || './views/collect2.json'
 var fs = require('fs')
 var design_doc
 function read_design_doc(cb){
