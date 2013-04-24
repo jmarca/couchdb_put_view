@@ -1,11 +1,11 @@
 {
-  "name": "couchdb_get_views",
+  "name": "couchdb_put_views",
   "version": "0.0.1",
-  "description": "Helper to query views from CouchDB",
-  "main": "couchdb_get_views.js",
+  "description": "Helper to put a view into CouchDB",
+  "main": "couchdb_put_view.js",
   "dependencies": {
     "couchdb_toQuery": "git://github.com/jmarca/couchdb_toQuery.git",
-    "superagent": "~0.12.0"
+    "superagent": ""
   },
   "devDependencies": {
       "should": ""
@@ -15,11 +15,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jmarca/couchdb_get_views"
+    "url": "https://github.com/jmarca/couchdb_put_view"
   },
   "keywords": [
     "CouchDB",
-    "query",
+    "put",
     "view"
   ],
   "author": "James E. Marca",

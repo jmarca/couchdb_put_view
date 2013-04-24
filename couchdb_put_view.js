@@ -16,13 +16,16 @@ function couchdb_put_view(opts,cb){
     if(design === undefined ) throw new Error('need a name for the design doc')
 
     var uri = [couchdb,db,design].join('/')
-    superagent
-    .put(uri)
-    .type('json')
-    .set('accept','application/json')
-    .set('followRedirect',true)
-    .auth(user,pass)
-    .send(doc)
+    console.log(uri)
+    var req = superagent
+              .put(uri)
+              .type('json')
+              .set('accept','application/json')
+              .set('followRedirect',true)
+    if(user){
+        req.auth(user,pass)
+    }
+    req.send(doc)
     .end(function(err,res){
         if(err) throw new Error(err)
         if(res.error){console.log(res.body)}
