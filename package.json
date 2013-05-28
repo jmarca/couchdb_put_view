@@ -1,5 +1,5 @@
 {
-  "name": "couchdb_put_views",
+  "name": "couchdb_put_view",
   "version": "0.0.1",
   "description": "Helper to put a view into CouchDB",
   "main": "couchdb_put_view.js",
