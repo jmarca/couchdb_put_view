@@ -1,21 +1,30 @@
 var superagent = require('superagent')
-var server = process.env.COUCHDB_HOST || 'localhost'
-var port = process.env.COUCHDB_PORT || 5984
-var user = process.env.COUCHDB_USER ;
-var pass = process.env.COUCHDB_PASS ;
-var couchdb = 'http://'+server+':'+port
+var _chost = process.env.COUCHDB_HOST || 'localhost'
+var _cport = process.env.COUCHDB_PORT || 5984
+var _cuser = process.env.COUCHDB_USER ;
+var _cpass = process.env.COUCHDB_PASS ;
+
 
 /**
  * I'm not going to protect you from being an idiot.
+ * initialize with the couchdb to save to
+ *
+ * expects that the url, port, username, password are in environment
+ * variables.  If not, there are no defaults for user, pass, host
+ * defaults to localhost, and port to the couchdb standard 5984
+ *
+ * var cuser = env.COUCHDB_USER ;
+ * var cpass = env.COUCHDB_PASS ;
+ * var chost = env.COUCHDB_HOST || '127.0.0.1';
+ * var cport = env.COUCHDB_PORT || 5984;
  */
 function couchdb_put_view(opts,cb){
-    var cdb_uri = couchdb
-
-    if(opts.url){
-        cdb_uri = opts.url+':'+opts.port
-    }
-    var cdb_u = opts.user || user
-    var cdb_p = opts.pass || pass
+    if(!opts) opts = {}
+    var cuser =  opts.user || _cuser
+    var cpass =  opts.pass || _cpass
+    var chost =  opts.host || _chost
+    var cport =  opts.port || _cport
+    var couch = 'http://'+chost+':'+cport
 
     var db = opts.db
     var doc = opts.doc
@@ -40,14 +49,14 @@ function couchdb_put_view(opts,cb){
     }
     prepare(doc)
 
-    var uri = [couchdb,db,design].join('/')
+    var uri = [couch,db,design].join('/')
     var req = superagent
               .put(uri)
               .type('json')
               .set('accept','application/json')
               .set('followRedirect',true)
-    if(cdb_u){
-        req.auth(cdb_u,cdb_p)
+    if(cuser && cpass){
+        req.auth(cuser,cpass)
     }
     req.send(doc)
     .end(function(err,res){
