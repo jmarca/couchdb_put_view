@@ -1,5 +1,5 @@
 var superagent = require('superagent')
-var _chost = process.env.COUCHDB_HOST || 'localhost'
+var _chost = process.env.COUCHDB_HOST || '127.0.0.1'
 var _cport = process.env.COUCHDB_PORT || 5984
 var _cuser = process.env.COUCHDB_USER ;
 var _cpass = process.env.COUCHDB_PASS ;
@@ -10,7 +10,7 @@ var _cpass = process.env.COUCHDB_PASS ;
  * initialize with the couchdb to save to
  *
  * expects that the url, port, username, password are in environment
- * variables.  If not, there are no defaults for user, pass, host
+ * variables.  If not, there are no defaults for user, pass.  Host
  * defaults to localhost, and port to the couchdb standard 5984
  *
  * var cuser = env.COUCHDB_USER ;

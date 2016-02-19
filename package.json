@@ -4,11 +4,11 @@
   "description": "Helper to put a view into CouchDB",
   "main": "couchdb_put_view.js",
   "dependencies": {
-    "couchdb_toQuery": "git://github.com/jmarca/couchdb_toQuery.git",
+    "couchdb_toQuery": "https://github.com/jmarca/couchdb_toQuery.git",
     "superagent": ""
   },
   "devDependencies": {
-    "lodash": "^2.4.1",
+    "lodash": "",
     "should": ""
   },
   "scripts": {
