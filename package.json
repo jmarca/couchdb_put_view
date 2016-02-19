@@ -5,6 +5,7 @@
   "main": "couchdb_put_view.js",
   "dependencies": {
     "couchdb_toQuery": "https://github.com/jmarca/couchdb_toQuery.git",
+    "minimist": "^1.2.0",
     "superagent": ""
   },
   "devDependencies": {
