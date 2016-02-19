@@ -2,33 +2,44 @@
 
 var should = require('should')
 var viewer = require('../.')
+var fs = require('fs')
 
 var _ = require('lodash')
 var superagent = require('superagent')
 
-var env = process.env;
-var cuser = env.COUCHDB_USER ;
-var cpass = env.COUCHDB_PASS ;
-var chost = env.COUCHDB_HOST || 'localhost';
-var cport = env.COUCHDB_PORT || 5984;
+var path    = require('path')
+var rootdir = path.normalize(__dirname)
+var config_file = rootdir+'/../test.config.json'
+var viewfile = rootdir+'/files/view.json'
 
-var test_db = env.COUCHDB_TESTDB || 'test%2fput%2fview%2fcode'
-if(!test_db){ throw new Error('need valide db defined in environment variable COUCHDB_TESTDB')}
-var couch = 'http://'+chost+':'+cport+'/'+test_db
-console.log('testing couchdb='+couch)
+var config_okay = require('config_okay')
+var config={}
 
-var created_locally=false
-before(function(done){
+var test_db
+
+function create_tempdb(done){
     // create a test db, the put data into it
-    superagent.put(couch)
+    var date = new Date()
+    test_db = [config.couchdb.db,
+                          date.getHours(),
+                          date.getMinutes(),
+                          date.getSeconds(),
+                          date.getMilliseconds()].join('-')
+    config.couchdb.db = test_db
+    var cdb =
+        [config.couchdb.host+':'+config.couchdb.port
+        ,config.couchdb.db].join('/')
+    superagent.put(cdb)
     .type('json')
-    .auth(cuser,cpass)
+    .auth(config.couchdb.auth.username
+         ,config.couchdb.auth.password)
     .end(function(e,r){
-        r.should.have.property('error',false)
-        if(!e)
-            created_locally=true
-        // now populate that db with some docs
-
+        if(r.error){
+            // do not delete if we didn't create
+            config.delete_db=false
+        }else{
+            config.delete_db=true
+        }
         var docs = {'docs':[{'_id':'doc1'
                     ,foo:'bar'}
                    ,{'_id':'doc2'
@@ -40,7 +51,7 @@ before(function(done){
                            })
             return null
         })
-        superagent.post(couch+'/_bulk_docs')
+        superagent.post(cdb+'/_bulk_docs')
         .type('json')
         .set('accept','application/json')
         .send(docs)
@@ -56,102 +67,82 @@ before(function(done){
         })
         return null
     })
+}
+
+
+before(function(done){
+    config_okay(config_file,function(err,c){
+        if(err){
+            console.log('Problem trying to parse options in ',config_file)
+            throw new Error(err)
+        }
+        if(c.couchdb.db === undefined){
+            c.couchdb.db = 'testdb'
+        }
+        config = c
+        create_tempdb(done)
+        return null
+    })
+})
+
+after(function(done){
+    var cdb =
+        [config.couchdb.host+':'+config.couchdb.port
+        ,config.couchdb.db].join('/')
+    superagent.del(cdb)
+        .type('json')
+        .auth(config.couchdb.auth.username,
+              config.couchdb.auth.password
+             )
+        .end(function(e,r){
+            if(e) return done(e)
+            return done()
+        })
+    return null
 })
 
 
-var views = ['_design/imputedchecks/_view/missing_wim_neighbors'
-            ,'_design/vdsml/_view/mainline'
-            ,'_design/properties/_view/segment_length_ml']
+describe('test put a view',function(){
+    var design_doc
+    before(function(done){
+        fs.readFile(viewfile, function (err, data) {
+            if (err) throw err;
+            design_doc = JSON.parse(data)
+            return done()
 
-describe('query view 1',function(){
+        })
+    })
 
-    it('should get all missing wim neighbors in district 3, reducing all'
-      ,function(done){
-           viewer({'db':test_db
-                  ,'view':views[0]
-                  ,'startkey':[2007, 3]
-                  ,'endkey':[2007,3,{}]
-                  }
+    it('should create the view, and use it'
+       ,function(done){
+           var opts = config.couchdb
+           opts.doc = design_doc
+           viewer(opts
                  ,function(err,docs){
-                      should.not.exist(err)
-                      docs.should.eql({"rows":[
-                          {"key":null,"value":294}
-                      ]})
-                      return done()
-                  })
-       })
-    it('should get all missing wim neighbors in district 3, no reduce'
-      ,function(done){
-           viewer({'db':test_db
-                  ,'view':views[0]
-                  ,'startkey':[2007, 3,5]
-                  ,'endkey':[2007,3,5,{}]
-                  ,'reduce':false
-                  }
-                 ,function(err,docs){
-                      should.not.exist(err)
-                      docs.rows.should.have.property('length',42)
-                      _.each(docs.rows,function(doc){
-                          doc.key.should.eql([2007,3,5])
-                      });
-                      return done()
-                  })
-       })
-    it('should get all missing wim neighbors in district 3, no reduce, using key'
-      ,function(done){
-           viewer({'db':test_db
-                  ,'view':views[0]
-                  ,'key':[2007, 3,5]
-                  ,'reduce':false
-                  }
-                 ,function(err,docs){
-                      should.not.exist(err)
-                      docs.rows.should.have.property('length',42)
-                      _.each(docs.rows,function(doc){
-                          doc.key.should.eql([2007,3,5])
-                      });
-                      return done()
-                  })
-       })
-    it('should get all missing wim neighbors in district 3, no reduce, using keys'
-      ,function(done){
-           viewer({'db':test_db
-                  ,'doc':'doc1'
-                  ,'view':views[0]
-                  ,'keys':[[2007, 3,5],[2008,3,5]]
-                  ,'reduce':false
-                  }
-                 ,function(err,docs){
-                      should.not.exist(err)
-                      docs.rows.should.have.property('length',82)
-                      _.each(docs.rows,function(doc){
-                          doc.key[0].should.match(/200(7|8)/)
-                          doc.key[1].should.eql(3)
-                          doc.key[2].should.eql(5)
-                      });
-                      return done()
-                  })
-       })
-    it('should get docs with include doc'
-      ,function(done){
-           viewer({'db':test_db
-                  ,'view':views[0]
-                  ,'key':[2007,3,5]
-                  ,'reduce':false
-                  ,'include_docs':true
-                  }
-                 ,function(err,docs){
-                      should.not.exist(err)
-                      docs.rows.should.have.property('length',42)
-                      _.each(docs.rows,function(doc){
-                          doc.key.should.eql([2007,3,5])
-                          doc.should.have.property('doc')
-                          var docdoc = doc.doc
-                          docdoc.should.have.property(2007)
-                          docdoc[2007].should.have.property('properties')
-                          docdoc[2007]['properties'][0].should.have.property('geojson')
-                      });
-                      return done()
+                     should.not.exist(err)
+                     should.exist(docs)
+                     docs.should.not.have.property('error')
+                     docs.should.have.property('ok',true)
+                     docs.should.have.property('id','_design/test')
+                     docs.should.have.property('rev')
+
+                     var cdb =
+                             [config.couchdb.host+':'+config.couchdb.port
+                              ,config.couchdb.db
+                              ,'_design/test/_view/superb_result'].join('/')
+                     superagent.get(cdb)
+                         .type('json')
+                         .end(function(e,r){
+                             if(e) return done(e)
+                             var b = JSON.parse(r.text)
+                             should.exist(b)
+                             b.should.have.property('rows')
+                             b.rows.should.have.length(1)
+                             b.rows[0].should.have.property('key')
+                             b.rows[0].should.have.property('value',9)
+                             return done()
+                         })
+
                   })
        })
 })

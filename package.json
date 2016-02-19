@@ -8,6 +8,7 @@
     "superagent": ""
   },
   "devDependencies": {
+    "config_okay": "0.0.3",
     "lodash": "",
     "should": ""
   },

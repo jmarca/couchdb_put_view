@@ -23,29 +23,42 @@ var putview = require('./couchdb_put_view')
 var viewfile = process.env.MY_DESIGN_DOC || './views/collect2.json'
 var fs = require('fs')
 var design_doc
-function read_design_doc(cb){
+function read_design_doc(file,cb){
     if(design_doc !== undefined){
+        // don't read the file in twice
         return cb(null)
     }
-    fs.readFile(viewfile, function (err, data) {
+    fs.readFile(file, function (err, data) {
         if (err) throw err;
         design_doc = JSON.parse(data)
-        cb(null)
+        cb(null,design_doc)
     });
     return null
 }
 
 function put_design_doc(db,cb){
-    async.series([read_design_doc
-                 ,function(cb2){
-                      putview({db:db
-                              ,doc:design_doc}
-                             ,cb2)
-                      return null
-                  }]
-                ,cb)
+    read_design_doc(viewfile
+                    ,function(err,dd){
+                        if(err) throw new Error(err)
+                        putview({db:db
+                                ,doc:dd}
+                                ,function(err,r){
+                                    if(err) throw new Error(err)
+                                    // all done, return original callback
+                                    cb(null,r)
+                                    return null
+                                })
+                        return null
+                    })
     return null
 }
+
+put_design_doc('mydatabase',function(e,r){
+    if(e) throw new Error(e)
+    console.log('done saving view, result is ',r)
+    return null
+})
+
 
 ```
 

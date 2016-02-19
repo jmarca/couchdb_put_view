@@ -1,0 +1,10 @@
+{
+   "_id": "_design/test",
+   "language": "javascript",
+   "views": {
+       "superb_result": {
+           "map": "function(doc) {\n  if(doc.superb !== undefined){\n      emit(doc.result, 1)\n  }\n}",
+           "reduce": "_count"
+       }
+   }
+}

@@ -20,11 +20,15 @@ var _cpass = process.env.COUCHDB_PASS ;
  */
 function couchdb_put_view(opts,cb){
     if(!opts) opts = {}
-    var cuser =  opts.user || _cuser
-    var cpass =  opts.pass || _cpass
+    var cuser =  opts.auth.username || _cuser
+    var cpass =  opts.auth.password || _cpass
     var chost =  opts.host || _chost
     var cport =  opts.port || _cport
-    var couch = 'http://'+chost+':'+cport
+
+    if(! /http/.test(chost)){
+        chost = 'http://'+chost
+    }
+    var couch = chost+':'+cport
 
     var db = opts.db
     var doc = opts.doc
