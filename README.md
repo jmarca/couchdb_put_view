@@ -15,72 +15,92 @@ putview({db:db
        ,cb2)
 ```
 
-If you have to read the design doc in from a file, then I do this:
+An example of how to use this library is given in the included program
+`put_view.js`.  This is  reproduced below with a few minor differences.
 
 ```javascript
 
-var putview = require('./couchdb_put_view')
-var viewfile = process.env.MY_DESIGN_DOC || './views/collect2.json'
+var putview = require('couchdb_put_view')
 var fs = require('fs')
-var design_doc
-function read_design_doc(file,cb){
-    if(design_doc !== undefined){
-        // don't read the file in twice
-        return cb(null)
-    }
-    fs.readFile(file, function (err, data) {
-        if (err) throw err;
-        design_doc = JSON.parse(data)
-        cb(null,design_doc)
-    });
-    return null
+var config_okay = require('config_okay')
+var argv = require('minimist')(process.argv.slice(2));
+console.dir(argv);
+
+var path    = require('path')
+var rootdir = path.normalize(process.cwd())
+console.log(rootdir)
+
+var viewfile = rootdir+'/'+argv.v
+var config_file = rootdir+'/'+argv.c
+
+if(argv.c === undefined){
+    console.log('Defaulting to config.json for the CouchDB config file.  Change by using the -c option')
+    config_file = rootdir+'/config.json'
+}
+if(argv.v === undefined){
+    console.log('Defaulting to view.json for the CouchDB view to store.  Change by using the -v option')
+    viewfile = rootdir+'/view.json'
 }
 
-function put_design_doc(db,cb){
-    read_design_doc(viewfile
-                    ,function(err,dd){
-                        if(err) throw new Error(err)
-                        putview({db:db
-                                ,doc:dd}
-                                ,function(err,r){
-                                    if(err) throw new Error(err)
-                                    // all done, return original callback
-                                    cb(null,r)
-                                    return null
-                                })
-                        return null
-                    })
-    return null
-}
+// read the config file, then read the view, then put it
+// in a chain of three stacked callbacks.
 
-put_design_doc('mydatabase',function(e,r){
+var config = {}
+config_okay(config_file,function(e,c){
     if(e) throw new Error(e)
-    console.log('done saving view, result is ',r)
+    config = c.couchdb
+    //
+    //  we have the configuration information for couchdb now
+    //
+    fs.readFile(viewfile, function (err, data) {
+        if (err) throw err;
+        //
+        // no error, then we have data, which is currently textual JSON
+        // so parse that now, add it to config
+        //
+        config.doc = JSON.parse(data)
+        // now put that into couchdb
+        //
+        putview(config
+                ,function(err,r){
+                    if(err) throw new Error(err)
+                    // all done, return original callback
+                    console.log(r)
+                    return null
+                })
+        return null
+    })
     return null
 })
 
-
 ```
 
-The `async.series` makes sure that the design doc is read in first, and
-then the put code is called.
-
-Usually you only do this once, so it is no big deal if it is super
-slow and inefficient.
-
-If I have a list of thousands of dbs that all want the same design
-doc, I set up the two functions above, but invoke them as so:
+If you have a list of thousands of dbs that all want the same design
+doc, then one can set up an async loop, using a library like async or
+queue-async.  For example, if you have a list of databases `dblist`,
+then you can do something like:
 
 ```
-async.series([read_design_doc
-              ,function(cb){
-                   async.eachLimit(dblist,5,put_design_doc,cb))
-                   return null
-             }]
-             ,function(err){
-                   // okay or not
-             })
+function put_design_doc(db,cb){
+    // make sure to create a local copy of
+    // the global config object
+    var local_config = config
 
+    // put this database name into the config object
+    local_config.db = db
+
+    // call put view for this database
+    putview(config
+            ,function(err,r){
+                if(err) throw new Error(err)
+                // all done, return callback
+                // to trigger next async function call
+                return cb()
+            })
+    return null
+}
+async.eachLimit(dblist,5,put_design_doc,cb))
 ```
 
-I haven't actually run that code, so it probably won't work
+I haven't actually run that code, so it probably won't work, but it is
+close enough to get started.
