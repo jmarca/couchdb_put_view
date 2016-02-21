@@ -75,6 +75,23 @@ config_okay(config_file,function(e,c){
 
 ```
 
+Note that the above function used my `config_okay` library, which
+expects configuration data in a json file that looks like:
+
+```
+{
+    "couchdb": {
+        "host": "127.0.0.1",
+        "port":5984,
+        "auth":{"username":"james",
+                "password":"oh my god no semicolons"
+               },
+        "db":"a_teststatedb"
+    }
+}
+```
+
+
 If you have a list of thousands of dbs that all want the same design
 doc, then one can set up an async loop, using a library like async or
 queue-async.  For example, if you have a list of databases `dblist`,
