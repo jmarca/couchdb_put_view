@@ -91,6 +91,10 @@ expects configuration data in a json file that looks like:
 }
 ```
 
+This file should be saved as config.json or something similar and set
+to read/write only by the owner (something like `chmod 0600
+config.json`)
+
 
 If you have a list of thousands of dbs that all want the same design
 doc, then one can set up an async loop, using a library like async or
