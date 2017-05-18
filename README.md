@@ -1,5 +1,7 @@
 # Put design doc into  CouchDB
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/jmarca/couchdb_put_view.svg)](https://greenkeeper.io/)
+
 This is a module to simplify putting a desgin doc into  CouchDB.
 
 Actually it doesn't help very much, but it save me some typing.
