@@ -9,7 +9,7 @@
     "superagent": ""
   },
   "devDependencies": {
-    "config_okay": "0.0.3",
+    "config_okay": "1.0.0",
     "lodash": "",
     "should": ""
   },
