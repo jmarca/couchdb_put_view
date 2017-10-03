@@ -11,7 +11,7 @@
   "devDependencies": {
     "config_okay": "1.0.1",
     "lodash": "",
-    "mocha": "^3.4.2",
+    "mocha": "^4.0.0",
     "should": ""
   },
   "scripts": {
