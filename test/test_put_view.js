@@ -140,7 +140,16 @@ describe('test put a view',function(){
                              b.rows.should.have.length(1)
                              b.rows[0].should.have.property('key')
                              b.rows[0].should.have.property('value',9)
-                             return done()
+                             // now try again, what happens?
+                             viewer(opts
+                                    ,function(err,docs){
+                                        // console.log('err is',err)
+                                        should.exist(docs)
+                                        docs.should.have.property('error','conflict')
+                                        docs.should.have.property('reason','Document update conflict.')
+                                        return done()
+                                    })
+                             return null
                          })
 
                   })
