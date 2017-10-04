@@ -63,10 +63,19 @@ function couchdb_put_view(opts,cb){
         req.auth(cuser,cpass)
     }
     req.send(doc)
-    .end(function(err,res){
-        if(err) throw new Error(err)
-        if(res.error){console.log(res.body)}
-        return cb(null, res.body)
-    })
+    if(!cb || cb === undefined){
+        return req //return the promise object
+    }else{
+        req
+            .then (res =>{
+                if(res.error){console.log('error putting view',res.body)}
+                return cb(res.error, res.body)
+            })
+            .catch ( err => {
+                return cb(err)
+            })
+        return null
+    }
 }
+
 module.exports=couchdb_put_view
