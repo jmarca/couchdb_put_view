@@ -9,7 +9,7 @@ env:
 
 addons:
   code_climate:
-    repo_token:
+    repo_token: 1da6c51bb7169f6d958c2e4a626f093cfa526acb424071c6340fc47410104b74
 
 services:
   - couchdb
