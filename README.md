@@ -1,6 +1,12 @@
 # Put design doc into  CouchDB
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/jmarca/couchdb_put_view.svg)](https://greenkeeper.io/)
+[![Code
+Climate](https://codeclimate.com/github/jmarca/couchdb_put_view/badges/gpa.svg)](https://codeclimate.com/github/jmarca/couchdb_put_view)
+[![Test
+Coverage](https://codeclimate.com/github/jmarca/couchdb_put_view/badges/coverage.svg)](https://codeclimate.com/github/jmarca/couchdb_put_view/coverage)
+[![Build
+Status](https://travis-ci.org/jmarca/couchdb_put_view.svg?branch=master)](https://travis-ci.org/jmarca/couchdb_put_view)
 
 This is a module to simplify putting a desgin doc into  CouchDB.
 
