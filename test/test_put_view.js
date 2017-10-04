@@ -1,157 +1,182 @@
 /* global require console process describe it */
 
-var should = require('should')
-var viewer = require('../.')
-var fs = require('fs')
+const tap = require('tap')
+const superagent = require('superagent')
+const fs = require('fs')
+const viewer = require('../.')
 
-var _ = require('lodash')
-var superagent = require('superagent')
-
-var path    = require('path')
-var rootdir = path.normalize(__dirname)
-var config_file = rootdir+'/../test.config.json'
-var viewfile = rootdir+'/files/view.json'
-
-var config_okay = require('config_okay')
-var config={}
-
-var test_db
-
-function create_tempdb(done){
-    // create a test db, the put data into it
-    var date = new Date()
-    test_db = [config.couchdb.db,
-                          date.getHours(),
-                          date.getMinutes(),
-                          date.getSeconds(),
-                          date.getMilliseconds()].join('-')
-    config.couchdb.db = test_db
-    var cdb =
-        [config.couchdb.host+':'+config.couchdb.port
-        ,config.couchdb.db].join('/')
-    superagent.put(cdb)
-    .type('json')
-    .auth(config.couchdb.auth.username
-         ,config.couchdb.auth.password)
-    .end(function(e,r){
-        if(r.error){
-            // do not delete if we didn't create
-            config.delete_db=false
-        }else{
-            config.delete_db=true
-        }
-        var docs = {'docs':[{'_id':'doc1'
-                    ,foo:'bar'}
-                   ,{'_id':'doc2'
-                    ,'baz':'bat'}
-                   ]}
-        _.each([1,2,3,4,5,6,7,8,9],function(v){
-            docs.docs.push({'superb':'timing',
-                            'result':v
-                           })
-            return null
+function promise_wrapper(fn,arg){
+    return new Promise((resolve, reject)=>{
+        fn(arg,function(e,r){
+            if(e){
+                console.log(e)
+                return reject(e)
+            }else{
+                return resolve(r)
+            }
         })
-        superagent.post(cdb+'/_bulk_docs')
-        .type('json')
-        .set('accept','application/json')
-        .send(docs)
-        .end(function(e,r){
-            if(e) done(e)
-            _.each(r.body
-                  ,function(resp){
-                       resp.should.have.property('ok')
-                       resp.should.have.property('id')
-                       resp.should.have.property('rev')
-                   });
-            return done()
-        })
-        return null
     })
 }
 
+const utils = require('./utils.js')
 
-before(function(done){
-    config_okay(config_file,function(err,c){
-        if(err){
-            console.log('Problem trying to parse options in ',config_file)
-            throw new Error(err)
-        }
-        if(c.couchdb.db === undefined){
-            c.couchdb.db = 'testdb'
-        }
-        config = c
-        create_tempdb(done)
+const path    = require('path')
+const rootdir = path.normalize(__dirname)
+const config_okay = require('config_okay')
+const config_file = rootdir+'/../test.config.json'
+const config={}
+
+const viewfile = rootdir+'/files/view.json'
+
+const date = new Date()
+const inprocess_string = date.toISOString()+' inprocess'
+
+let cdb
+const test_db ='test%2fput%2fview'
+
+// function(e,r){
+//             if(e) done(e)
+//             r.body.forEach(
+//                   function(resp){
+//                        resp.should.have.property('ok')
+//                        resp.should.have.property('id')
+//                        resp.should.have.property('rev')
+//                   })
+//             return done()
+//         })
+
+
+
+
+function test_put_view( t ) {
+    let  design_doc
+
+    return promise_wrapper(fs.readFile, viewfile)
+        .then( data => {
+            design_doc = JSON.parse(data)
+            return Promise.resolve(design_doc)
+        })
+        .then( design_doc => {
+            var opts = config.couchdb
+            opts.doc = design_doc
+            return new Promise((resolve,reject)=>{
+                viewer(opts
+                   ,function(err,docs){
+                       t.notOk(err,'should not get error')
+                       t.ok(docs,'should get docs')
+                       t.notOk(docs.error)
+                       t.ok(docs.ok)
+                       t.is(docs.id,'_design/test')
+                       t.ok(docs.rev)
+                       //console.log('done putting view, call resolve')
+                       return resolve()
+                   })
+            })
+        })
+        .then( ()=>{
+
+            var cdb =
+                [config.couchdb.host+':'+config.couchdb.port
+                 ,config.couchdb.db
+                 ,'_design/test/_view/superb_result'].join('/')
+            // console.log('getting',cdb)
+            return superagent.get(cdb)
+                .type('json')
+        })
+        .then( r => {
+            t.ok(r.text)
+            var b = JSON.parse(r.text)
+            // console.log('got output of view:',b)
+            t.ok(b)
+            t.ok(b.rows)
+            t.is(b.rows.length, 1)
+            t.is(b.rows[0].key,null)
+            t.ok(b.rows[0].value)
+            t.is(b.rows[0].value,9)
+            return Promise.resolve(r)
+        })
+}
+
+function test_put_again( t ){
+    let  design_doc
+
+    return promise_wrapper(fs.readFile, viewfile)
+        .then( data => {
+            design_doc = JSON.parse(data)
+            return Promise.resolve(design_doc)
+        })
+        .then( design_doc => {
+
+            // now try again, what happens?
+            // console.log('trying a second put view.  Should fail')
+            var opts = config.couchdb
+            opts.doc = design_doc
+            return  new Promise((resolve,reject)=>{
+                viewer(opts
+                       ,function(err,docs){
+                           t.ok(err)
+                           if(!err) return reject()
+                           return resolve()
+                       })
+            })
+
+        })
+}
+
+function test_put_again_no_callback( t ){
+    let  design_doc
+
+    return promise_wrapper(fs.readFile, viewfile)
+        .then( data => {
+            design_doc = JSON.parse(data)
+            return Promise.resolve(design_doc)
+        })
+        .then( design_doc => {
+
+            // now try again, what happens?
+            // console.log('trying a second put view.  Should fail')
+            var opts = config.couchdb
+            opts.doc = design_doc
+            return  viewer(opts)
+                .then( docs => {
+                    t.fail('should not succeed')
+                })
+                .catch( e => {
+                    t.pass('should fail to double put')
+                })
+        })
+}
+
+config_okay(config_file)
+    .then(function(c){
+        // console.log('configure test db')
+        config.couchdb = c.couchdb
+        return utils.create_tempdb(config)
+    })
+    .then(()=>{
+        // console.log('populate test db')
+        return utils.populate_db(config)
+    })
+
+    .then( r => {
+        // console.log('call test')
+        return tap.test('test getting a doc',test_put_view)
+    })
+    .then( () => {
+        // console.log('double put view test')
+        return tap.test('test duplicate put',test_put_again)
+    })
+    .then( () => {
+        // console.log('double put view test, no callback')
+        return tap.test('test duplicate put',test_put_again_no_callback)
+    })
+    .then(function(tt){
+        // console.log('done, tearing down')
+        utils.teardown(config,function(eeee,rrrr){
+            return tap.end()
+        })
         return null
     })
-})
-
-after(function(done){
-    var cdb =
-        [config.couchdb.host+':'+config.couchdb.port
-        ,config.couchdb.db].join('/')
-    superagent.del(cdb)
-        .type('json')
-        .auth(config.couchdb.auth.username,
-              config.couchdb.auth.password
-             )
-        .end(function(e,r){
-            if(e) return done(e)
-            return done()
-        })
-    return null
-})
-
-
-describe('test put a view',function(){
-    var design_doc
-    before(function(done){
-        fs.readFile(viewfile, function (err, data) {
-            if (err) throw err;
-            design_doc = JSON.parse(data)
-            return done()
-
-        })
+    .catch( function(e){
+        throw e
     })
-
-    it('should create the view, and use it'
-       ,function(done){
-           var opts = config.couchdb
-           opts.doc = design_doc
-           viewer(opts
-                 ,function(err,docs){
-                     should.not.exist(err)
-                     should.exist(docs)
-                     docs.should.not.have.property('error')
-                     docs.should.have.property('ok',true)
-                     docs.should.have.property('id','_design/test')
-                     docs.should.have.property('rev')
-
-                     var cdb =
-                             [config.couchdb.host+':'+config.couchdb.port
-                              ,config.couchdb.db
-                              ,'_design/test/_view/superb_result'].join('/')
-                     superagent.get(cdb)
-                         .type('json')
-                         .end(function(e,r){
-                             if(e) return done(e)
-                             var b = JSON.parse(r.text)
-                             should.exist(b)
-                             b.should.have.property('rows')
-                             b.rows.should.have.length(1)
-                             b.rows[0].should.have.property('key')
-                             b.rows[0].should.have.property('value',9)
-                             // now try again, what happens?
-                             viewer(opts
-                                    ,function(err,docs){
-                                        // console.log('err is',err)
-                                        should.exist(docs)
-                                        docs.should.have.property('error','conflict')
-                                        docs.should.have.property('reason','Document update conflict.')
-                                        return done()
-                                    })
-                             return null
-                         })
-
-                  })
-       })
-})
