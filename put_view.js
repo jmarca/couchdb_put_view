@@ -1,15 +1,26 @@
-var putview = require('./couchdb_put_view.js')
-var fs = require('fs')
-var config_okay = require('config_okay')
+const putview = require('./couchdb_put_view.js')
+const fs = require('fs')
+const config_okay = require('config_okay')
 var argv = require('minimist')(process.argv.slice(2));
-console.dir(argv);
 
-var path    = require('path')
-var rootdir = path.normalize(process.cwd())
-console.log(rootdir)
+function promise_wrapper(fn,arg){
+    return new Promise((resolve, reject)=>{
+        fn(arg,function(e,r){
+            if(e){
+                console.log(e)
+                return reject(e)
+            }else{
+                return resolve(r)
+            }
+        })
+    })
+}
 
-var viewfile = rootdir+'/'+argv.v
-var config_file = rootdir+'/'+argv.c
+const path    = require('path')
+const rootdir = path.normalize(process.cwd())
+
+let viewfile = rootdir+'/'+argv.v
+let config_file = rootdir+'/'+argv.c
 
 if(argv.c === undefined){
     console.log('Defaulting to config.json for the CouchDB config file.  Change by using the -c option')
@@ -21,23 +32,22 @@ if(argv.v === undefined){
 }
 
 var config = {}
-config_okay(config_file,function(e,c){
-    if(e) throw new Error(e)
-    config.couchdb = c.couchdb
+config_okay(config_file)
+    .then( c => {
+        // console.log('configure test db')
+        config.couchdb = c.couchdb
+        return promise_wrapper(fs.readFile,viewfile)
+    })
+    .then( data => {
 
-    fs.readFile(viewfile, function (err, data) {
-        if (err) throw err;
         config.couchdb.doc = JSON.parse(data)
         // now put that into couchdb
 
-        putview(config.couchdb
-                ,function(err,r){
-                    if(err) throw new Error(err)
-                    // all done, return original callback
-                    console.log(r)
-                    return null
-                })
-        return null
+        return putview(config.couchdb)
     })
-    return null
-})
+    .then(r => {
+        console.log('view written', r)
+    })
+    .catch( err => {
+        console.log('error putting view in couchdb',err)
+    })

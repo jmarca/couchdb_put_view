@@ -10,7 +10,7 @@ Status](https://travis-ci.org/jmarca/couchdb_put_view.svg?branch=master)](https:
 
 This is a module to simplify putting a desgin doc into  CouchDB.
 
-Actually it doesn't help very much, but it save me some typing.
+Actually it doesn't help very much, but it saves me some typing.
 
 Anyway, pass in the opts object with the db and a javascript object
 containing the design doc as so
@@ -24,22 +24,32 @@ putview({db:db
 ```
 
 An example of how to use this library is given in the included program
-`put_view.js`.  This is  reproduced below with a few minor differences.
+`put_view.js`.  This is  reproduced below.
 
 ```javascript
-
-var putview = require('couchdb_put_view')
-var fs = require('fs')
-var config_okay = require('config_okay')
+const putview = require('./couchdb_put_view.js')
+const fs = require('fs')
+const config_okay = require('config_okay')
 var argv = require('minimist')(process.argv.slice(2));
-console.dir(argv);
 
-var path    = require('path')
-var rootdir = path.normalize(process.cwd())
-console.log(rootdir)
+function promise_wrapper(fn,arg){
+    return new Promise((resolve, reject)=>{
+        fn(arg,function(e,r){
+            if(e){
+                console.log(e)
+                return reject(e)
+            }else{
+                return resolve(r)
+            }
+        })
+    })
+}
 
-var viewfile = rootdir+'/'+argv.v
-var config_file = rootdir+'/'+argv.c
+const path    = require('path')
+const rootdir = path.normalize(process.cwd())
+
+let viewfile = rootdir+'/'+argv.v
+let config_file = rootdir+'/'+argv.c
 
 if(argv.c === undefined){
     console.log('Defaulting to config.json for the CouchDB config file.  Change by using the -c option')
@@ -50,40 +60,29 @@ if(argv.v === undefined){
     viewfile = rootdir+'/view.json'
 }
 
-// read the config file, then read the view, then put it
-// in a chain of three stacked callbacks.
-
 var config = {}
-config_okay(config_file,function(e,c){
-    if(e) throw new Error(e)
-    config = c.couchdb
-    //
-    //  we have the configuration information for couchdb now
-    //
-    fs.readFile(viewfile, function (err, data) {
-        if (err) throw err;
-        //
-        // no error, then we have data, which is currently textual JSON
-        // so parse that now, add it to config
-        //
-        config.doc = JSON.parse(data)
-        // now put that into couchdb
-        //
-        putview(config
-                ,function(err,r){
-                    if(err) throw new Error(err)
-                    // all done, return original callback
-                    console.log(r)
-                    return null
-                })
-        return null
+config_okay(config_file)
+    .then( c => {
+        // console.log('configure test db')
+        config.couchdb = c.couchdb
+        return promise_wrapper(fs.readFile,viewfile)
     })
-    return null
-})
+    .then( data => {
 
+        config.couchdb.doc = JSON.parse(data)
+        // now put that into couchdb
+
+        return putview(config.couchdb)
+    })
+    .then(r => {
+        console.log('view written', r)
+    })
+    .catch( err => {
+        console.log('error putting view in couchdb',err)
+    })
 ```
 
-Note that the above function used my `config_okay` library, which
+Note that the above script uses my `config_okay` library, which
 expects configuration data in a json file that looks like:
 
 ```
@@ -105,30 +104,38 @@ config.json`)
 
 
 If you have a list of thousands of dbs that all want the same design
-doc, then one can set up an async loop, using a library like async or
-queue-async.  For example, if you have a list of databases `dblist`,
-then you can do something like:
+doc, then you can use this library to set up a loop using
+Promise.all().  Something like:
 
 ```
-function put_design_doc(db,cb){
-    // make sure to create a local copy of
-    // the global config object
-    var local_config = config
+const mydbs = [ ... ]
 
-    // put this database name into the config object
-    local_config.db = db
+// setup config to include the view, etc
 
-    // call put view for this database
-    putview(config
-            ,function(err,r){
-                if(err) throw new Error(err)
-                // all done, return callback
-                // to trigger next async function call
-                return cb()
-            })
-    return null
+config = { "doc" : ...parsed function  thing ...
+          ,"host":"127.0.0.1" // or whatever
+          ,"port":5984 // or whatever
+          ,"auth":{"username":"champagne" // fixme
+                   ,"password":"horse with a staplegun pulling espresso" // fixme
+                   }
+         }
+
+const promises =
+    mydbs.map( db => {
+
+        // create a local copy of
+        // the config object
+        const local_config = Object.assign({},config)
+
+        // put this database name into the config object
+        local_config.db = db
+
+        // call put view for this database
+        return putview(config)
+    })
 }
-async.eachLimit(dblist,5,put_design_doc,cb))
+return Promise.all(promises)
+
 ```
 
 I haven't actually run that code, so it probably won't work, but it is
