@@ -108,7 +108,7 @@ function test_put_again( t ){
         .then( design_doc => {
 
             // now try again, what happens?
-            // console.log('trying a second put view.  Should fail')
+            console.log('trying a second put view.  Should fail')
             var opts = config.couchdb
             opts.doc = design_doc
             return  new Promise((resolve,reject)=>{
@@ -134,7 +134,7 @@ function test_put_again_no_callback( t ){
         .then( design_doc => {
 
             // now try again, what happens?
-            // console.log('trying a second put view.  Should fail')
+            console.log('trying a second put view.  Should fail')
             var opts = config.couchdb
             opts.doc = design_doc
             return  viewer(opts)
@@ -178,5 +178,6 @@ config_okay(config_file)
         return null
     })
     .catch( function(e){
+        console.log('caught error')
         throw e
     })
