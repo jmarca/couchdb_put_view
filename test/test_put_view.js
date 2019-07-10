@@ -149,12 +149,12 @@ function test_put_again_no_callback( t ){
 
 config_okay(config_file)
     .then(function(c){
-        // console.log('configure test db')
+        console.log('configure test db')
         config.couchdb = c.couchdb
         return utils.create_tempdb(config)
     })
     .then(()=>{
-        // console.log('populate test db')
+        console.log('populate test db')
         return utils.populate_db(config)
     })
 
