@@ -9,7 +9,7 @@ function promise_wrapper(fn,arg){
     return new Promise((resolve, reject)=>{
         fn(arg,function(e,r){
             if(e){
-                console.log(e)
+                console.log("reject", e)
                 return reject(e)
             }else{
                 return resolve(r)
@@ -108,7 +108,7 @@ function test_put_again( t ){
         .then( design_doc => {
 
             // now try again, what happens?
-            console.log('trying a second put view.  Should fail')
+            //console.log('trying a second put view.  Should fail')
             var opts = config.couchdb
             opts.doc = design_doc
             return  new Promise((resolve,reject)=>{
@@ -134,7 +134,7 @@ function test_put_again_no_callback( t ){
         .then( design_doc => {
 
             // now try again, what happens?
-            console.log('trying a second put view.  Should fail')
+            //console.log('trying a second put view.  Should fail')
             var opts = config.couchdb
             opts.doc = design_doc
             return  viewer(opts)
@@ -149,35 +149,39 @@ function test_put_again_no_callback( t ){
 
 config_okay(config_file)
     .then(function(c){
-        console.log('configure test db')
+        // console.log('configure test db, ',c)
+        if (c.couchdb.db === undefined){
+            c.couchdb.db=test_db
+        }
+
         config.couchdb = c.couchdb
         return utils.create_tempdb(config)
     })
     .then(()=>{
-        console.log('populate test db')
+        //console.log('populate test db')
         return utils.populate_db(config)
     })
 
     .then( r => {
-        // console.log('call test')
+        //console.log('call test')
         return tap.test('test getting a doc',test_put_view)
     })
     .then( () => {
-        // console.log('double put view test')
+        //console.log('double put view test')
         return tap.test('test duplicate put',test_put_again)
     })
     .then( () => {
-        // console.log('double put view test, no callback')
+        //console.log('double put view test, no callback')
         return tap.test('test duplicate put',test_put_again_no_callback)
     })
     .then(function(tt){
-        // console.log('done, tearing down')
+        //console.log('done, tearing down')
         utils.teardown(config,function(eeee,rrrr){
             return tap.end()
         })
         return null
     })
     .catch( function(e){
-        console.log('caught error')
+        console.log('caught error', e)
         throw e
     })
