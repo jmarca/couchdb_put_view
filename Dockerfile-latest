@@ -1,4 +1,4 @@
-FROM node:12-alpine
+FROM node:alpine
 
 # Create app directory
 WORKDIR /usr/src/app
@@ -15,6 +15,6 @@ RUN npm install
 # RUN npm ci --only=production
 
 # Bundle app source
-COPY . .
+# COPY . .
 
 CMD [ "npm", "start" ]
