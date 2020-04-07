@@ -1,6 +1,6 @@
 # Put design doc into  CouchDB
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/jmarca/couchdb_put_view.svg)](https://greenkeeper.io/)
+
 [![Code
 Climate](https://codeclimate.com/github/jmarca/couchdb_put_view/badges/gpa.svg)](https://codeclimate.com/github/jmarca/couchdb_put_view)
 [![Test
