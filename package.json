@@ -6,11 +6,11 @@
   "dependencies": {
     "couchdb_toQuery": "git+https://github.com/jmarca/couchdb_toQuery.git",
     "minimist": "^1.2.8",
-    "superagent": "^5.3.1"
+    "superagent": "^7.1.5"
   },
   "devDependencies": {
     "config_okay": "1.0.1",
-    "tap": "^14.10.7"
+    "tap": "^16.3.7"
   },
   "scripts": {
     "test": "tap test/**/test*.js --cov",
